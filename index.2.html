@@ -10,7 +10,7 @@
         <div id="dataviz"></div>
         <script>
             var margin = {top: 30, right: 10, bottom: 10, left: 0},
-                width = 700 - margin.left - margin.right,
+                width = 2500 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
 
             var svg = d3.select("#dataviz")
@@ -40,78 +40,54 @@
                     }
                 }
                 const country_list = d3.keys(countries);
+                const medal_list = ['Gold', 'Silver', 'Bronze'];
+
                 var data = [];
-                for(key in countries) {
-                        var d  = {"Country" : key, 
-                                  "Gold": countries[key]['Gold'], 
-                                  "Silver" : countries[key]['Silver'], 
-                                  "Bronze" : countries[key]['Bronze']};
-                        data.push(d);
+                for(m in medal_list) {
+                    var d  = {};
+                    for(c in country_list) {
+                        d[c] = countries[country_list[c]][medal_list[m]];
+                    }
+                    data.push(d);
                 }
-                const medal_list = ['Country', 'Gold', 'Silver', 'Bronze'];
 
                 var y = {};
-                var country_scale = d3.scalePoint()
-                                        .padding(2)
-                                        .domain(country_list)
-                                        .range([0, height]);
-
-            
-                for(m in medal_list) {
-                    y[medal_list[m]] = d3.scaleSqrt()
-                                         .domain(d3.extent(data, function(d) {return +d[medal_list[m]]}))
+                for(c in country_list) {
+                    y[country_list[c]] = d3.scaleLinear()
+                                         .domain(d3.extent(data, function(d) {return +d[c]}))
                                          .range([height, 0]);
                 }
-                y["Country"] = country_scale;
+
 
                 var x = d3.scalePoint()
                           .range([0, width])
                           .padding(0.5)
-                          .domain(medal_list);
+                          .domain(country_list);
 
-
+                console.log(x);
+                
                 
                 function path(d) {
-                    return d3.line()(medal_list.map(function(p) { return [x(p), y[p](d[p])]; }));
-                }
-
-
-                var highlight = function(d){
-                    selected_specie = d.Country;
-                    d3.selectAll("." + selected_specie)
-                    .transition().duration(200)
-                    .style("stroke", "#69b3a2")
-                    .style("opacity", "1")
-                }
-
-
-                var doNotHighlight = function(d){
-                    d3.selectAll(".line")
-                    .transition().duration(200).delay(1000)
-                    .style("stroke", "#69b3a2" )
-                    .style("opacity", "0.5")
+                    return d3.line()(country_list.map(function(p) { return [x(p), y[p](d[p])]; }));
                 }
 
                 svg.selectAll("myPath")
                     .data(data)
                     .enter().append("path")
                     .attr("d",  path)
-                    .attr("class", function (d) { return "line " + d.Country } )
                     .style("fill", "none")
                     .style("stroke", "#69b3a2")
-                    .style("opacity", 0.5)
-                    .on("mouseover", highlight)
-                    .on("mouseleave", doNotHighlight );
+                    .style("opacity", 0.5);
 
-
+                 
                 svg.selectAll("myAxis")
-                    .data(medal_list).enter()
+                    .data(country_list).enter()
                     .append("g")
                     .attr("transform", function(d) { return "translate(" + x(d) + ")"; })
                     .each(function(d) { d3.select(this).call(d3.axisLeft().scale(y[d])); })
                     .append("text")
                     .style("text-anchor", "middle")
-                    .attr("y", -9)
+                    .attr("y", -15)
                     .text(function(d) { return d; })
                     .style("fill", "black");               
             });
