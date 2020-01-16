@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Data Visualization</title>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        
+    </head>
+    <body>
+        <div id="dataviz"></div>
+        <script>
+            var margin = {top: 30, right: 10, bottom: 40, left: 90},
+                width = 500 - margin.left - margin.right,
+                height = 700 - margin.top - margin.bottom;
+
+            var svg = d3.select("#dataviz")
+                        .append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                        .attr("transform","translate(" + margin.left + "," + margin.top + ")");
+
+            d3.json("/exercise2-olympics.json").then(function(data) {
+                var countries = {};
+                for (var i = 0; i < data.length; i++) {
+                    var c = data[i]['Country'] + '-' + data[i]['Sport'];
+                    if(countries[c]) {
+                        var count = countries[c];
+                        countries[c] = (countries[c] + 1);
+                    }
+                    else {
+                        countries[c] = 1;
+                    }
+                }
+                var data = [];
+                var countrySet = new Set();
+                var sportSet = new Set();
+                for(c in countries) {
+                    var country = c.split("-")[0];
+                    var sport = c.split("-")[1];
+                    var count = countries[c];
+                    countrySet.add(country);
+                    sportSet.add(sport);
+                }      
+                countrySet = Array.from(countrySet);
+                sportSet = Array.from(sportSet);
+                for(c in countrySet) {
+                    for(s in sportSet) {
+                        if(countries[countrySet[c] + '-' + sportSet[s]]) {
+                            data.push({"country": countrySet[c], "sport": sportSet[s], "count": countries[countrySet[c] + '-' + sportSet[s]]});
+                        }
+                        else {
+                            data.push({"country": countrySet[c], "sport": sportSet[s], "count":0});
+                        }
+                    }
+                }
+
+                var x = d3.scaleBand()
+                            .range([ 0, width ])
+                            .domain(sportSet)
+                            .padding(0.01);
+
+                svg.append("g")
+                            .attr("transform", "translate(0," + height+ ")")
+                            .call(d3.axisBottom(x))
+                            .attr("y", 50);
+                
+
+                var y = d3.scaleBand()
+                            .range([ height, 0 ])
+                            .domain(countrySet)
+                            .padding(0.01);
+
+                svg.append("g")
+                    .call(d3.axisLeft(y));
+
+                var myColor = d3.scaleLinear()
+                                    .range(["#AAD4CA", "#69b3a2"])
+                                    .domain([1,100]);
+
+                svg.selectAll()
+                    .data(data, function(d) {return d.sport+':'+d.country;})
+                    .enter()
+                    .append("rect")
+                    .attr("x", function(d) { return x(d.sport) })
+                    .attr("y", function(d) { return y(d.country) })
+                    .attr("width", x.bandwidth() )
+                    .attr("height", y.bandwidth() )
+                    .style("fill", function(d) { return myColor(d.count)} )
+
+                svg.append("text").attr("x", 100).attr("y", -10)
+                .text("Sports played by each country")
+                .style("font-size", "15px").attr("alignment-baseline","left")
+
+            });
+        </script>
+    </body>
+</html>
